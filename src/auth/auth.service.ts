@@ -12,7 +12,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-  ) {}
+  ) { }
 
   async login(email: string, password: string) {
     const user = await this.usersService.findByEmail(email);
@@ -30,11 +30,18 @@ export class AuthService {
       throw new UnauthorizedException("Invalid email or password.");
     }
 
-    const accessToken = await this.jwtService.signAsync({
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    const accessToken = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      {
+        expiresIn: "15m",
+        // expiresIn: "1h",
+        // expiresIn: "7d",        
+      },
+    );
 
     // Never return the password hash or JWT in the JSON response.
     return {

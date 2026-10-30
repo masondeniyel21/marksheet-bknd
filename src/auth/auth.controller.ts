@@ -20,13 +20,14 @@ import {
   JwtAuthGuard,
   type AuthenticatedUser,
 } from "./jwt-auth.guard";
+import { UnauthorizedException } from '@nestjs/common';
 
 @Controller("auth")
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly usersService: UsersService,
-  ) {}
+  ) { }
 
   @Post("login")
   @HttpCode(HttpStatus.OK)
@@ -51,13 +52,31 @@ export class AuthController {
       parsed.data.password,
     );
 
+    // response.cookie("school_access", result.accessToken, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "strict",
+    //   path: "/",
+    //   maxAge: 15 * 60 * 1000,  // 15 minutes 15 * 60 * 1000
+    //   // maxAge: 30 * 60 * 1000,   // 30 minutes 30 * 60 * 1000
+    //   // maxAge: 60 * 60 * 1000,   // 1 hour  60 * 60 * 1000
+    //   // maxAge: 24 * 60 * 60 * 1000,  //  1 day  24 * 60 * 60 * 1000
+    // });
+
+    // response.cookie("access_token", result.accessToken, {
+    //   httpOnly: true,
+    //   secure: false, // Local development only
+    //   sameSite: "lax",
+    //   path: "/",
+    // });
+
     response.cookie("school_access", result.accessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // Local development only
+      sameSite: "lax",
       path: "/",
-      maxAge: 15 * 60 * 1000,
     });
+
 
     return { user: result.user };
   }
@@ -70,10 +89,18 @@ export class AuthController {
   ) {
     // Production deployments should also enforce a trusted Origin
     // and CSRF protection for this state-changing endpoint.
+
+    // response.clearCookie("school_access", {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "strict",
+    //   path: "/",
+    // });
+
     response.clearCookie("school_access", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      secure: false, // Local development only
+      sameSite: "lax",
       path: "/",
     });
 
@@ -85,11 +112,15 @@ export class AuthController {
   async me(
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    console.log('backend me urlllll');
     const profile = await this.usersService.findById(user.sub);
 
     if (!profile || !profile.isActive) {
       // A deleted or disabled account must not retain access.
-      throw new (await import("@nestjs/common")).UnauthorizedException(
+      // throw new (await import("@nestjs/common")).UnauthorizedException(
+      //   "Account is unavailable.",
+      // );
+      throw new UnauthorizedException(
         "Account is unavailable.",
       );
     }
